@@ -26,8 +26,6 @@ RUN npm ci --only=production
 # Copy the built application from the first stage
 COPY --from=build /app .
 
-RUN mv .env.development .env
-
 # Expose port 3000
 EXPOSE 3000
 
