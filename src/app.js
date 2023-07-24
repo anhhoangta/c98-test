@@ -1,8 +1,12 @@
 const express = require('express');
 const app = express();
+require('dotenv').config();
 const fileUpload = require('express-fileupload');
 const fs = require('fs');
 const crypto = require('crypto');
+
+const path = require('path');
+const uploadsDir = path.join(__dirname, '..', process.env.UPLOADS_DIR);
 
 app.use(fileUpload());
 
@@ -14,12 +18,11 @@ app.post('/upload', (req, res) => {
     return res.status(400).send('No files were uploaded.');
   }
   let sampleFile = req.files.sampleFile;
-  let uploadPath = __dirname + '/uploads/';
 
   // Check if the uploads directory exists
-  if (!fs.existsSync(uploadPath)) {
+  if (!fs.existsSync(uploadsDir)) {
     // Create the uploads directory
-    fs.mkdirSync(uploadPath);
+    fs.mkdirSync(uploadsDir);
   }
 
   // Generate a hash for the file content
@@ -43,7 +46,7 @@ app.post('/upload', (req, res) => {
   }
   console.log(fileHashTable);
 
-  let fullFilePath = uploadPath + sampleFile.name;
+  let fullFilePath = uploadsDir + '/' + sampleFile.name;
   sampleFile.mv(fullFilePath, function(err) {
     if (err)
       return res.status(500).send(err);
@@ -60,7 +63,7 @@ app.get('/file/:name', function(req, res) {
   let filePath;
   for (let hash in fileHashTable) {
     if (fileHashTable[hash].includes(fileName)) {
-      filePath = __dirname + '/uploads/' + fileHashTable[hash][0];
+      filePath = uploadsDir + '/' + fileHashTable[hash][0];
       fileFound = true;
       break;
     }
@@ -76,7 +79,7 @@ app.get('/file/:name', function(req, res) {
 
 app.delete('/file/:name', function(req, res) {
   let fileName = req.params.name;
-  let filePath = __dirname + '/uploads/' + fileName;
+  let filePath = uploadsDir + '/' + fileName;
 
   // Find the file in the hash table
   let fileFound = false;

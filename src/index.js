@@ -1,11 +1,9 @@
 const app = require('./app');
-
-// ... your Express app configuration ...
+require('dotenv').config();
 
 // Start the server
-let server = app.listen(3000, function() {
+let server = app.listen(process.env.PORT, function() {
   console.log('Example app listening on port 3000!');
 });
 
-// Export the running server instance
 module.exports = server;

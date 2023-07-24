@@ -1,6 +1,6 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const server = require('./index');
+const server = require('../src/index');
 const fs = require('fs');
 
 chai.use(chaiHttp);
