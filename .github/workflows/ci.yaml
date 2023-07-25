@@ -21,13 +21,16 @@ jobs:
     - name: Set up environment
       run: mv .env.development .env
 
-    - name: Run tests
+    - name: Run Unittest tests
       run: npm test
+
+    - name: Run coverage check
+      run: npm run coverage
 
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@master
       env:
-        # SONAR_HOST_URL: https://sonarcloud.io
+        SONAR_HOST_URL: https://sonarcloud.io
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
