@@ -32,8 +32,6 @@ jobs:
       uses: SonarSource/sonarqube-scan-action@master
       with:
         projectBaseDir: .
-        projectKey: anhhoangta_c98-test
-        organization: anhhoangta
         sonarToken: ${{ secrets.SONAR_TOKEN }}
 
     - name: Set up Docker buildx
