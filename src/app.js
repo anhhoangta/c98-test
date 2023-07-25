@@ -13,6 +13,11 @@ app.use(fileUpload());
 // Create an object to store the hash table
 let fileHashTable = {};
 
+// Create health check endpoint
+app.get('/health', function(req, res) {
+  res.status(200).send('OK');
+});
+
 app.post('/upload', (req, res) => {
   if (!req.files || Object.keys(req.files).length === 0) {
     return res.status(400).send('No files were uploaded.');
