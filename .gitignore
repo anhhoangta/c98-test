@@ -4,6 +4,9 @@ node_modules/
 # Uploaded files
 uploads/
 
+# Test results
+.nyc_output/
+
 # Environment variables
 .env
 

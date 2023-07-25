@@ -2,10 +2,10 @@ name: Node.js CI
 
 on: [push]
 
-# env:
-#   # Set environment variables for SonarQube analysis
-#   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#   SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+env:
+  # Set environment variables for SonarQube analysis
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
 jobs:
   build:
@@ -29,10 +29,10 @@ jobs:
     - name: Run tests
       run: npm test
 
-    # - name: SonarQube Scan
-    #   uses: SonarSource/sonarqube-scan-action@master
-    #   with:
-    #     projectBaseDir: .
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@master
+      with:
+        projectBaseDir: .
 
     - name: Set up Docker buildx
       uses: docker/setup-buildx-action@v2

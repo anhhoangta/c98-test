@@ -8,10 +8,12 @@
     "express-fileupload": "^1.4.0",
     "fs": "^0.0.1-security",
     "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
     "path": "^0.12.7"
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "mocha"
+    "test": "mocha",
+    "coverage": "nyc --reporter=text mocha"
   }
 }
