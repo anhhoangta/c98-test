@@ -30,17 +30,11 @@ app.post('/upload', async(req, res) => {
     }
     let sampleFile = req.files.sampleFile;
 
-    // Check if the uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      // Create the uploads directory
-      fs.promises.mkdir(uploadsDir, { recursive: true });
-    }
-
     // Get a database connection
     const db = await dbPromise;
 
     // Create a table to store the hash table data
-    db.run('CREATE TABLE IF NOT EXISTS fileHashTable (hash TEXT, fileName TEXT)');
+    await db.run('CREATE TABLE IF NOT EXISTS fileHashTable (hash TEXT, fileName TEXT)');
 
     // Generate a hash for the file content
     let hash = crypto.createHash('sha256').update(sampleFile.data).digest('hex');
