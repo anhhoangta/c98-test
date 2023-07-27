@@ -4,125 +4,133 @@ require('dotenv').config();
 const fileUpload = require('express-fileupload');
 const fs = require('fs');
 const crypto = require('crypto');
+const sqlite3 = require('sqlite3').verbose();
+const sqlite = require('sqlite');
 
 const path = require('path');
 const uploadsDir = path.join(__dirname, '..', process.env.UPLOADS_DIR);
 
 app.use(fileUpload());
 
-// Create an object to store the hash table
-let fileHashTable = {};
+// Create a new SQLite database connection
+const dbPromise = sqlite.open({
+  filename: process.env.SQLITE_FILE,
+  driver: sqlite3.Database
+});
 
 // Create health check endpoint
 app.get('/health', function(req, res) {
-  res.status(200).send('OK');
+  return res.status(200).send('OK');
 });
 
-app.post('/upload', (req, res) => {
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return res.status(400).send('No files were uploaded.');
-  }
-  let sampleFile = req.files.sampleFile;
+app.post('/upload', async(req, res) => {
+  try {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).send('No files were uploaded.');
+    }
+    let sampleFile = req.files.sampleFile;
 
-  // Check if the uploads directory exists
-  if (!fs.existsSync(uploadsDir)) {
-    // Create the uploads directory
-    fs.mkdirSync(uploadsDir);
-  }
+    // Check if the uploads directory exists
+    if (!fs.existsSync(uploadsDir)) {
+      // Create the uploads directory
+      fs.mkdirSync(uploadsDir);
+    }
 
-  // Generate a hash for the file content
-  let hash = crypto.createHash('sha256').update(sampleFile.data).digest('hex');
+    // Get a database connection
+    const db = await dbPromise;
 
-  // Check if a file with the same content already exists
-  if (fileHashTable[hash]) {
+    // Create a table to store the hash table data
+    db.run('CREATE TABLE IF NOT EXISTS fileHashTable (hash TEXT, fileName TEXT)');
 
-    // Check if the file name already exists in the hash table
-    if (fileHashTable[hash].includes(sampleFile.name)) {
+    // Generate a hash for the file content
+    let hash = crypto.createHash('sha256').update(sampleFile.data).digest('hex');
+
+    // Check if a file with the same content and name already exists
+    let row = await db.get('SELECT * FROM fileHashTable WHERE hash = ? AND fileName = ?', [hash, sampleFile.name]);
+    if (row) {
+      console.log(row);
+      // File with the same content and name already exists
       return res.status(200).send('File already exists!');
     }
+    // Check if a file with the same content already exists
+    row = await db.get('SELECT * FROM fileHashTable WHERE hash = ?', [hash]);
+    if (row) {
+      console.log(row);
+      await db.run('INSERT INTO fileHashTable (hash, fileName) VALUES (?, ?)', [hash, sampleFile.name]);
+      // File with the same content already exists
+      return res.status(200).send('File uploaded!');
+    }
 
-    // Add the new file name to the hash table
-    fileHashTable[hash].push(sampleFile.name);
-    console.log(fileHashTable);
-    return res.status(200).send('File with the same content already exists!');
-  } else {
-    // Add the file to the hash table
-    fileHashTable[hash] = [sampleFile.name];
+    let fullFilePath = uploadsDir + '/' + sampleFile.name;
+    await new Promise((resolve, reject) => {
+      sampleFile.mv(fullFilePath, function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+    
+    // Add the hash of file to db
+    await db.run('INSERT INTO fileHashTable (hash, fileName) VALUES (?, ?)', [hash, sampleFile.name]);
+
+    return res.status(200).send('File uploaded!');
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Error!");
   }
-  console.log(fileHashTable);
-
-  let fullFilePath = uploadsDir + '/' + sampleFile.name;
-  sampleFile.mv(fullFilePath, function(err) {
-    if (err)
-      return res.status(500).send(err);
-
-    res.send('File uploaded!');
-  });
 });
 
-app.get('/file/:name', function(req, res) {
+app.get('/file/:name', async (req, res) =>{
+  try {
   let fileName = req.params.name;
 
+  // Get a database connection
+  const db = await dbPromise;
+
   // Find the file in the hash table
-  let fileFound = false;
-  let filePath;
-  for (let hash in fileHashTable) {
-    if (fileHashTable[hash].includes(fileName)) {
-      filePath = uploadsDir + '/' + fileHashTable[hash][0];
-      fileFound = true;
-      break;
+  row = await db.get('SELECT * FROM fileHashTable WHERE fileName = ?', [fileName]);
+    if (!row || !fs.existsSync(uploadsDir + '/' + row.fileName)) {
+      return res.status(404).send('File not found!');
     }
-  }
 
-  if (!fileFound || !fs.existsSync(filePath)) {
-    return res.status(404).send('File not found!');
+    return res.status(200).sendFile(uploadsDir + '/' + row.fileName);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Error!");
   }
-
-  return res.status(200).sendFile(filePath);
 });
 
+app.delete('/file/:name', async(req, res) => {
+  try {
+    let fileName = req.params.name;
+    let filePath = uploadsDir + '/' + fileName;
 
-app.delete('/file/:name', function(req, res) {
-  let fileName = req.params.name;
-  let filePath = uploadsDir + '/' + fileName;
+    // Get a database connection
+    const db = await dbPromise;
 
-  // Find the file in the hash table
-  let fileFound = false;
-  let fileHash;
-  for (let hash in fileHashTable) {
-    if (fileHashTable[hash].includes(fileName)) {
-      fileFound = true;
-      fileHash = hash;
-      break;
-    }
-  }
+    row = await db.get('SELECT * FROM fileHashTable WHERE fileName = ?', [fileName]);
 
-  if (!fileFound) {
-    return res.status(404).send('File not found!');
-  }
-
-  // Remove the file from the hash table
-  let index = fileHashTable[fileHash].indexOf(fileName);
-  if (index > -1) {
-    fileHashTable[fileHash].splice(index, 1);
-    console.log(fileHashTable);
-    return res.status(200).send('File deleted!');
-  }
-
-  // Remove the hash from the hash table if there are no more files with the same content
-  if (fileHashTable[fileHash].length === 0) {
-    delete fileHashTable[fileHash];
-  }
-
-  console.log(fileHashTable);
-
-  fs.unlink(filePath, function(err) {
-    if (err) {
-      return res.status(500).send("Delete file error!");
+    if (!row) {
+      return res.status(404).send('File not found!');
     }
 
-    res.send('File deleted!');
-  });
+    // Delete the file info from db
+    await db.run('DELETE FROM fileHashTable WHERE fileName = ?', [fileName]);
+
+    fs.unlink(filePath, function(err) {
+      if (err) {
+        return res.status(500).send("Delete file error!");
+      }
+
+      return res.status(200).send('File deleted!');
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send("Error!");
+  }
 });
 
 module.exports = app;

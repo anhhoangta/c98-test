@@ -38,7 +38,7 @@ describe('File Upload', () => {
       .attach('sampleFile', fs.readFileSync(__dirname + '/' + fileWithTheSameContent), fileWithTheSameContent)
       .end((err, res) => {
         res.should.have.status(200);
-        res.text.should.be.eql('File with the same content already exists!');
+        res.text.should.be.eql('File uploaded!');
         done();
       });
   });
