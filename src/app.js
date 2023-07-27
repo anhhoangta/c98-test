@@ -105,17 +105,28 @@ app.delete('/file/:name', async(req, res) => {
     // Get a database connection
     const db = await dbPromise;
 
-    row = await db.get('SELECT * FROM fileHashTable WHERE fileName = ?', [fileName]);
+    let row = await db.get('SELECT * FROM fileHashTable WHERE fileName = ?', [fileName]);
 
     if (!row) {
       return res.status(404).send('File not found!');
     }
 
+    // Get hash of file and check if there are other files with the same hash.
+    // If there are no other files with the same hash, delete the file from the file system.
+    // If there are other files with the same hash, delete the file info from the db.
+    const hash = row.hash;
+    
     // Delete the file info from db
     await db.run('DELETE FROM fileHashTable WHERE fileName = ?', [fileName]);
 
+    row = await db.get('SELECT * FROM fileHashTable WHERE hash = ?', [hash]);
+    if (row) {
+      return res.status(200).send('File deleted!');
+    }
+
     fs.unlink(filePath, function(err) {
       if (err) {
+        console.log(err);
         return res.status(500).send("Delete file error!");
       }
 
