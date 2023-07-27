@@ -33,7 +33,7 @@ app.post('/upload', async(req, res) => {
     // Check if the uploads directory exists
     if (!fs.existsSync(uploadsDir)) {
       // Create the uploads directory
-      fs.mkdirSync(uploadsDir);
+      fs.promises.mkdir(uploadsDir, { recursive: true });
     }
 
     // Get a database connection
