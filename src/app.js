@@ -112,17 +112,20 @@ app.delete('/file/:name', async(req, res) => {
     }
 
     // Get hash of file and check if there are other files with the same hash.
-    // If there are no other files with the same hash, delete the file from the file system.
+    // If there are no other files with the same hash, delete the file from both the db and the file system.
     // If there are other files with the same hash, delete the file info from the db.
     const hash = row.hash;
-    
-    // Delete the file info from db
+
+    rowLength = await db.get('SELECT COUNT(*) as Total FROM fileHashTable WHERE hash = ?', [hash]);
+    console.log(rowLength);
+    // In both case, we need to delete the file info from db
     await db.run('DELETE FROM fileHashTable WHERE fileName = ?', [fileName]);
 
-    row = await db.get('SELECT * FROM fileHashTable WHERE hash = ?', [hash]);
-    if (row) {
+    if (rowLength.Total > 1) {
       return res.status(200).send('File deleted!');
     }
+
+    console.log('123123123');
 
     fs.unlink(filePath, function(err) {
       if (err) {

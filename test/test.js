@@ -1,8 +1,12 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const server = require('../src/index');
 const fs = require('fs');
 
+// Set the SQLITE_FILE and UPLOADS_DIR environment variables to the path of the test database file
+process.env.SQLITE_FILE = 'data/test/test.db';
+process.env.UPLOADS_DIR = 'data/test';
+
+const server = require('../src/index');
 chai.use(chaiHttp);
 chai.should();
 
@@ -21,7 +25,7 @@ describe('File Upload', () => {
       });
   });
 
-  it('should not add to hash table if both file name and file content are the same', (done) => {
+  it('should not add to db if both file name and file content are the same', (done) => {
     chai.request(server)
       .post('/upload')
       .attach('sampleFile', fs.readFileSync(__dirname + '/' + fileName), fileName)
@@ -32,7 +36,7 @@ describe('File Upload', () => {
       });
   });
 
-  it('should add to hash table if file name is different but file content is the same', (done) => {
+  it('should add to db if file name is different but file content is the same', (done) => {
     chai.request(server)
       .post('/upload')
       .attach('sampleFile', fs.readFileSync(__dirname + '/' + fileWithTheSameContent), fileWithTheSameContent)
