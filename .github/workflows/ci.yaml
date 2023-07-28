@@ -20,9 +20,6 @@ jobs:
 
     - name: Set up environment
       run: mv .env.development .env
-    
-    - name: Run script.sh to prepare environment
-      run: chmod +x script.sh && ./script.sh
 
     # - name: Run Unittest and Coverage check
     #   run: npm run coverage
@@ -50,3 +47,6 @@ jobs:
         file: ./Dockerfile
         tags: ghcr.io/${{ github.repository_owner }}/c98-test:${{ github.sha }}
         push: true
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
