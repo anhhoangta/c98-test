@@ -18,5 +18,8 @@ mkdir -p "$db_dir"
 # Create the test directory
 mkdir -p "$TEST_DIR"
 
+# Create the SQLite database
+
+
 # Create the S3 bucket
 # aws s3api create-bucket --bucket "$s3_bucket_name" --region us-east-1

@@ -26,6 +26,9 @@ RUN npm ci --only=production
 # Copy the built application from the first stage
 COPY --from=build /app .
 
+RUN chown -R node:node /app && chmod -R 755 /app
+USER node
+
 # Expose port 3000
 EXPOSE 3000
 
