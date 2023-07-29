@@ -30,11 +30,6 @@ COPY --from=build /app .
 # Create upload directory
 RUN mkdir -p /app/data/uploads
 
-# Create a user to run the application
-RUN addgroup -S app && adduser -S app -G app
-RUN chown -R app:app /app && chmod -R 755 /app
-USER app
-
 # Expose port 3000
 EXPOSE 3000
 
