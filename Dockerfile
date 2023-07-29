@@ -11,7 +11,7 @@ RUN npm ci
 
 # Copy the rest of the application code
 COPY ./src ./src
-COPY ./.env.development ./.env
+COPY ./.env ./.env
 
 # Second stage: copy the built application and install production dependencies
 FROM node:alpine
