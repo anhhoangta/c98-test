@@ -26,4 +26,14 @@ if [ $? -eq 0 ]; then
 else
     echo "The secret $AWS_SECRET_NAME does not exist. Creating the secret..."
     aws secretsmanager create-secret --name "$AWS_SECRET_NAME" --secret-string "$AWS_SECRET_VALUE"
-fi  
+fi 
+
+# Unset all the environment variables
+unset DB_HOST
+unset DB_PORT
+unset DB_NAME
+unset DB_USER
+unset DB_PASSWORD
+unset AWS_DEFAULT_REGION
+unset AWS_ACCESS_KEY_ID
+unset AWS_SECRET_ACCESS_KEY

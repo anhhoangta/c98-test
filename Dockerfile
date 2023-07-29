@@ -10,7 +10,7 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy the rest of the application code
-COPY . .
+COPY ./src ./src
 
 # Second stage: copy the built application and install production dependencies
 FROM node:alpine
@@ -28,6 +28,11 @@ COPY --from=build /app .
 
 # Create upload directory
 RUN mkdir -p /app/data/uploads
+
+# Create a user to run the application
+RUN addgroup -S app && adduser -S app -G app
+RUN chown -R app:app /app
+USER app
 
 # Expose port 3000
 EXPOSE 3000
