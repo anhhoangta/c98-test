@@ -20,9 +20,12 @@ jobs:
 
     - name: Set up environment
       run: mv .env.development .env
+    
+    - name: Run script
+      run: chmod +x ./scripts/create_folders.sh && ./scripts/create_folders.sh
 
-    # - name: Run Unittest and Coverage check
-    #   run: npm run coverage
+    - name: Run Unittest and Coverage check
+      run: npm test
 
     - name: SonarQube Scan
       uses: SonarSource/sonarqube-scan-action@master

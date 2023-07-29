@@ -6,6 +6,7 @@ data/
 
 # Test results
 .nyc_output/
+coverage/
 
 # Environment variables
 .env
