@@ -1,19 +1,27 @@
 version: '3'
 services:
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile.local
     ports:
       - "3000:3000"
     environment:
+      NODE_ENV: local
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       - db
+      - redis
   db:
     image: postgres:13.3-alpine
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+  redis:
+    image: redis:6.2.5-alpine
