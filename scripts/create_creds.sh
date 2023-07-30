@@ -10,6 +10,9 @@ DB_SECRET_VALUE=$(printf '{"db_host":"%s","db_port":"%s","db_name":"%s","db_user
 AWS_SECRET_NAME="aws-credentials"
 AWS_SECRET_VALUE=$(printf '{"AWS_ACCESS_KEY_ID":"%s","AWS_SECRET_ACCESS_KEY":"%s"}' "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY")
 
+REDIS_SECRET_NAME="redis-credentials"
+REDIS_SECRET_VALUE=$(printf '{"REDIS_HOST":"%s","REDIS_PORT":"%s"}' "$REDIS_HOST" "$REDIS_PORT")
+
 # Check if the secret exists. If not create the secret.
 aws secretsmanager describe-secret --secret-id "$DB_SECRET_NAME" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
@@ -28,12 +31,12 @@ else
     aws secretsmanager create-secret --name "$AWS_SECRET_NAME" --secret-string "$AWS_SECRET_VALUE"
 fi 
 
-# Unset all the environment variables
-unset DB_HOST
-unset DB_PORT
-unset DB_NAME
-unset DB_USER
-unset DB_PASSWORD
-unset AWS_DEFAULT_REGION
-unset AWS_ACCESS_KEY_ID
-unset AWS_SECRET_ACCESS_KEY
+# Check if the redis secret exists. If not create the secret.
+aws secretsmanager describe-secret --secret-id "$REDIS_SECRET_NAME" > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "The secret $REDIS_SECRET_NAME already exists."
+else
+    echo "The secret $REDIS_SECRET_NAME does not exist. Creating the secret..."
+    aws secretsmanager create-secret --name "$REDIS_SECRET_NAME" --secret-string "$REDIS_SECRET_VALUE"
+fi
+

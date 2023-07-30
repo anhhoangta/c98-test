@@ -1,21 +1,27 @@
 const request = require('supertest');
 const app = require('./app');
 const db = require('./db');
+const cache = require('./cache');
 const mockFs = require('mock-fs');
 const { createHash } = require('./helper');
 const fs = require('fs');
+const redisMock = require('redis-mock');
+const redis = redisMock.createClient();
 
 jest.mock('./db');
+jest.mock('./cache');
 
 describe('GET /file/:name', () => {
   beforeAll(() => {
-    // Create a mock file system with a test.txt file in the uploads directory
+    redis.flushall();
+    // Create a mock file system with a test.txt file in the uploads directory and cachedFile in the data directory
     // and include the necessary modules for Jest
     mockFs({
       data: {
         uploads: {
           'test.txt': 'This is a test file'
-        }
+        },
+        'cachedFile': Buffer.from('cached file data'),
       },
       [require.resolve('exit')]: ''
     });
@@ -26,9 +32,21 @@ describe('GET /file/:name', () => {
     mockFs.restore();
   });
 
-  test('should return 200 and the file if it exists', async () => {
+  it('should return 200 and respond with cached file data if the file is found in the cache', async () => {
+
+    db.getFileByName.mockResolvedValueOnce([{ hash: 'dummyhash', filename: 'file1' }]);
+    cache.cacheGetBuffer.mockResolvedValueOnce(Buffer.from('cached file data'));
+    const cachedFile = fs.readFileSync('data/cachedFile');
+
+    const response = await request(app).get('/file/file1');
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(cachedFile);
+  });
+
+  test('should return 200 and response the file from storage if it not exists in cache', async () => {
     // Mock the getFile function to return a fake file record
     db.getFileByName.mockResolvedValueOnce([{ filename: 'test.txt' }]);
+    cache.cacheGetBuffer.mockResolvedValueOnce(null);
 
     // Make a GET request to the /file/test endpoint
     const res = await request(app).get('/file/test.txt');

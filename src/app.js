@@ -5,6 +5,8 @@ const fileUpload = require('express-fileupload');
 const fs = require('fs');
 const { createTable, getFileByName, getFileByHashAndName, getFileByHash, getFileCountByHash, addFile, deleteFile } = require('./db');
 const { createHash } = require('./helper');
+const { cacheSet, cacheGetBuffer, cacheDel } = require('./cache');
+const mime = require('mime');
 
 const path = require('path');
 const uploadsDir = path.join(__dirname, '..', process.env.UPLOADS_DIR);
@@ -74,7 +76,26 @@ app.get('/file/:name', async (req, res) => {
       return res.status(404).send('File not found!');
     }
 
-    return res.status(200).sendFile(uploadsDir + '/' + rows[0].filename);
+    // Check if the file is already stored in the cache
+    const hash = rows[0].hash;
+    console.log(hash);
+    let cachedFile = await cacheGetBuffer(hash);
+    console.log(cachedFile);
+    if (cachedFile) {
+      console.log("File found in cache!");
+      res.setHeader('Content-Type', mime.lookup(displayName));
+      return res.status(200).send(cachedFile);
+    }
+
+    // Read the file data from disk
+    let filePath = uploadsDir + '/' + rows[0].filename;
+    let fileData = await fs.promises.readFile(filePath);
+
+    // Store the file in the cache
+    await cacheSet(hash, fileData);
+
+    res.setHeader('Content-Type', mime.lookup(displayName));
+    return res.status(200).sendFile(filePath);
   } catch (err) {
     console.log(err);
     return res.status(500).send("Error!");
@@ -110,6 +131,9 @@ app.delete('/file/:name', async (req, res) => {
     // Delete the file info from db
     await deleteFile(rows[0].filename, displayName);
 
+    // Delete the file from cache
+    await cacheDel(hash);
+
     fs.unlink(filePath, function (err) {
       if (err) {
         console.log(err);
@@ -123,6 +147,5 @@ app.delete('/file/:name', async (req, res) => {
     return res.status(500).send("Error!");
   }
 });
-
 
 module.exports = app;
