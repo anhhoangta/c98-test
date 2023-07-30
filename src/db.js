@@ -28,7 +28,6 @@ async function getPool() {
         database: secret.db_name
       };
     }
-    console.log(dbConfig);
     pool = new Pool(dbConfig);
   }
   return pool;
